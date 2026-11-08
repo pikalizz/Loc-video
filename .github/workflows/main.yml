@@ -4,15 +4,14 @@ name: Build XMedia Scanner APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -24,20 +23,23 @@ jobs:
       - name: Extract source ZIP
         run: |
           mkdir -p source
-          unzip -q ./*.zip -d source
-          WRAPPER=$(find source -type f -name gradlew | head -n 1)
-          if [ -z "$WRAPPER" ]; then
-            echo "Khong tim thay gradlew trong ZIP"
+          unzip -q XMediaScanner_v3_2_Android_Kotlin.zip -d source
+          SETTINGS=$(find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "Khong tim thay settings.gradle. ZIP co the thieu project Android."
             exit 1
           fi
-          PROJECT_DIR=$(dirname "$WRAPPER")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
 
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
